@@ -78,7 +78,12 @@ jobs:
           cache: 'npm'
       - name: Install frontend dependencies
         working-directory: frontend
-        run: npm ci
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
       - name: Build frontend
         working-directory: frontend
         run: npm run build
@@ -128,7 +133,12 @@ jobs:
           cache: 'npm'
       - name: Install frontend dependencies
         working-directory: frontend
-        run: npm ci
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
       - name: Build frontend
         working-directory: frontend
         run: npm run build
@@ -200,7 +210,8 @@ jobs:
           cache: 'npm'
       - name: Install frontend dependencies (Windows)
         working-directory: frontend
-        run: npm ci
+        run: |
+          if (Test-Path package-lock.json) { npm ci } else { npm install }
       - name: Build frontend (Windows)
         working-directory: frontend
         run: npm run build
