@@ -1,0 +1,14 @@
+.git
+.env
+**/.venv
+**/.conda
+**/.conda-env
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/node_modules
+frontend/dist
+data/*
+!data/.gitkeep
+*.db
+*.sqlite3

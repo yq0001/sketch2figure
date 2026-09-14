@@ -1,0 +1,42 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #18212f;
+  background: #f4f7fb;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+button, input, textarea, select { font: inherit; }
+button:disabled { cursor: not-allowed; opacity: 0.55; }
+
+.app-shell { width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding: 34px 0 56px; }
+.topbar, .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.topbar h1, .hero-panel h2, .section-heading h2, .provider-card h3 { margin: 0; }
+.topbar h1 { font-size: 1.9rem; letter-spacing: -0.035em; }
+.eyebrow { margin: 0 0 6px; color: #647083; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; }
+.backend-pill, .status { border-radius: 999px; padding: 7px 11px; font-size: 0.78rem; font-weight: 700; background: #e6eaf0; color: #4b5565; }
+.backend-pill.online, .status-configured { background: #e2f2e8; color: #236640; }
+.status-unsupported { background: #f0ebf7; color: #684e86; }
+
+.hero-panel { margin-top: 30px; padding: 40px; display: flex; align-items: end; justify-content: space-between; gap: 40px; background: #fff; border: 1px solid #e4e9f0; border-radius: 24px; box-shadow: 0 18px 50px rgba(36, 52, 72, 0.08); }
+.hero-panel h2 { max-width: 700px; font-size: clamp(2rem, 4vw, 3.4rem); line-height: 1.02; letter-spacing: -0.045em; }
+.hero-panel p:not(.eyebrow) { max-width: 720px; color: #596577; line-height: 1.6; }
+.hero-panel button { min-width: 190px; border: 0; border-radius: 12px; padding: 13px 16px; background: #172536; color: white; }
+
+.section-block { margin-top: 34px; }
+.section-heading { margin-bottom: 14px; }
+.section-heading h2 { font-size: 1.25rem; }
+.provider-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.provider-card { display: grid; gap: 15px; padding: 20px; background: #fff; border: 1px solid #e4e9f0; border-radius: 18px; }
+.provider-card p, .provider-card small { margin: 5px 0 0; color: #697588; }
+.provider-card .status { justify-self: start; }
+.error-text { color: #9d3535; font-size: 0.88rem; }
+
+@media (max-width: 760px) {
+  .app-shell { width: min(100% - 24px, 1180px); padding-top: 20px; }
+  .topbar, .hero-panel { align-items: flex-start; flex-direction: column; }
+  .hero-panel { padding: 26px; }
+  .provider-grid { grid-template-columns: 1fr; }
+}
