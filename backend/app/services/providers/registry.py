@@ -7,8 +7,18 @@ from app.services.providers.openai import OpenAIImageProvider
 
 class ProviderRegistry:
     def __init__(self) -> None:
+        self._providers: dict[str, AIImageProvider] = {}
+        # initialize based on current settings
+        self.refresh()
+
+    def refresh(self) -> None:
+        """Reload provider instances from current settings.
+
+        Call this after environment or settings change to ensure provider
+        descriptors reflect the latest configured keys and model names.
+        """
         settings = get_settings()
-        self._providers: dict[str, AIImageProvider] = {
+        self._providers = {
             "openai": OpenAIImageProvider(settings.openai_image_model, settings.openai_api_key),
             "gemini": GeminiImageProvider(settings.gemini_image_model, settings.gemini_api_key),
             "claude": ClaudeImageProvider(settings.claude_image_model, settings.anthropic_api_key),

@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
+from app.services.providers import registry as provider_registry_module
 
 settings = get_settings()
 configure_logging(settings.log_level)
@@ -15,6 +16,12 @@ configure_logging(settings.log_level)
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     settings.data_dir.mkdir(parents=True, exist_ok=True)
+    # Ensure provider registry reads the latest settings (useful when .env changes)
+    try:
+        provider_registry_module.provider_registry.refresh()
+    except Exception:
+        # don't fail startup if refresh isn't possible; providers will be lazy
+        pass
     yield
 
 
