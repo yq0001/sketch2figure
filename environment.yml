@@ -1,0 +1,13 @@
+name: sketch2figure
+channels:
+  - conda-forge
+dependencies:
+  - python=3.13
+  - pip>=24
+  - nodejs=22
+  - numpy
+  - pillow
+  - pytest
+  - pip:
+    - -r backend/requirements.txt
+    - -r backend/requirements-dev.txt
