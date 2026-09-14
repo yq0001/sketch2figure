@@ -35,12 +35,21 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
           python -m pip install -r requirements-dev.txt
+          python -V
+          python -m pip --version
+          python -m pip list
+          echo "=== backend files ==="
+          ls -la
       - name: Run linter
         working-directory: backend
         run: python -m ruff check .
       - name: Run tests
         working-directory: backend
-        run: python -m pytest -q --junitxml=report.xml
+        run: |
+          echo "Working dir: $(pwd)"
+          echo "Files in backend:"
+          ls -la
+          python -m pytest -q --junitxml=report.xml
       - name: Upload backend test report
         if: always()
         uses: actions/upload-artifact@v4
@@ -158,12 +167,19 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
           python -m pip install -r requirements-dev.txt
+          python -V
+          python -m pip --version
+          python -m pip list
+          dir
       - name: Run linter (Windows)
         working-directory: backend
         run: python -m ruff check .
       - name: Run tests (Windows)
         working-directory: backend
-        run: python -m pytest -q --junitxml=report-windows.xml
+        run: |
+          echo "Working dir: %CD%"
+          dir
+          python -m pytest -q --junitxml=report-windows.xml
       - name: Upload backend test report (Windows)
         if: always()
         uses: actions/upload-artifact@v4
