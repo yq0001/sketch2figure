@@ -57,7 +57,22 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins(self) -> list[str]:
-        return [self.frontend_origin]
+        origins: list[str] = []
+        if self.frontend_origin:
+            origins.append(self.frontend_origin)
+            # also accept the equivalent 127.0.0.1 form when frontend uses localhost
+            if "localhost" in self.frontend_origin:
+                origins.append(self.frontend_origin.replace("localhost", "127.0.0.1"))
+            elif "127.0.0.1" in self.frontend_origin:
+                origins.append(self.frontend_origin.replace("127.0.0.1", "localhost"))
+        # dedupe while preserving order
+        seen = set()
+        result: list[str] = []
+        for o in origins:
+            if o not in seen:
+                seen.add(o)
+                result.append(o)
+        return result
 
 
 @lru_cache
