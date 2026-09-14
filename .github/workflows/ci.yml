@@ -1,0 +1,231 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    # daily at 03:00 UTC — adjust as needed
+    - cron: '0 3 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.12, 3.13]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.cache/pip/wheels
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/backend/requirements*.txt') }}
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-dev.txt
+      - name: Run linter
+        working-directory: backend
+        run: python -m ruff check .
+      - name: Run tests
+        working-directory: backend
+        run: python -m pytest -q --junitxml=report.xml
+      - name: Upload backend test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-report-${{ matrix.python-version }}
+          path: |
+            backend/report.xml
+            backend/.pytest_cache
+
+  frontend:
+    needs: backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache node modules and npm cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            frontend/node_modules
+            ~/.npm
+          key: ${{ runner.os }}-node-22-${{ hashFiles('frontend/package-lock.json', 'frontend/package.json') }}
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+      - name: Prepare test results directory
+        working-directory: frontend
+        run: mkdir -p test-results
+      - name: Run frontend tests
+        working-directory: frontend
+        run: npm test -- --run --reporter junit --outputFile test-results/vitest-junit.xml || true
+      - name: Upload frontend test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-test-report
+          path: frontend/test-results
+      - name: Upload frontend build artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+
+  frontend-full-matrix:
+    # Runs full OS/Node matrix for pushes to main/master and PRs targeting main/master
+    if: >-
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'))
+      || (github.event_name == 'pull_request' && (github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'master'))
+    needs: backend
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node-version: [22, 20]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache node modules and npm cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            frontend/node_modules
+            ~/.npm
+          key: ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('frontend/package-lock.json', 'frontend/package.json') }}
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+      - name: Prepare test results directory
+        working-directory: frontend
+        run: mkdir -p test-results
+      - name: Run frontend tests
+        working-directory: frontend
+        run: npm test -- --run --reporter junit --outputFile test-results/vitest-junit.xml || true
+      - name: Upload frontend test report (matrix)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-test-report-${{ matrix.os }}-node${{ matrix.node-version }}
+          path: frontend/test-results
+      - name: Upload frontend build artifact (matrix)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist-${{ matrix.os }}-node${{ matrix.node-version }}
+          path: frontend/dist
+
+  # Windows-first jobs to prioritize fixing Windows CI quickly
+  backend-windows:
+    runs-on: windows-latest
+    needs: []
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python on Windows
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+      - name: Install backend dependencies (Windows)
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-dev.txt
+      - name: Run linter (Windows)
+        working-directory: backend
+        run: python -m ruff check .
+      - name: Run tests (Windows)
+        working-directory: backend
+        run: python -m pytest -q --junitxml=report-windows.xml
+      - name: Upload backend test report (Windows)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-report-windows
+          path: |
+            backend/report-windows.xml
+
+  frontend-windows:
+    runs-on: windows-latest
+    needs: []
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js on Windows
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install frontend dependencies (Windows)
+        working-directory: frontend
+        run: npm ci
+      - name: Build frontend (Windows)
+        working-directory: frontend
+        run: npm run build
+      - name: Prepare test results directory (Windows)
+        working-directory: frontend
+        run: powershell -Command "New-Item -ItemType Directory -Force test-results"
+      - name: Run frontend tests (Windows)
+        working-directory: frontend
+        run: npm test -- --run --reporter junit --outputFile test-results/vitest-junit-windows.xml || true
+      - name: Upload frontend test report (Windows)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-test-report-windows
+          path: frontend/test-results
+
+  # Manual CentOS8 compatibility job — run this via "Run workflow" (workflow_dispatch)
+  centos8-check:
+    runs-on: ubuntu-latest
+    # Run for manual dispatch, scheduled runs, pushes to main/master, and PRs targeting main/master
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || github.event_name == 'schedule'
+      || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'))
+      || (github.event_name == 'pull_request' && (github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'master'))
+    needs: []
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pull CentOS 8 image
+        run: docker pull centos:8
+      - name: Run backend tests inside CentOS8 container
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/work -w /work centos:8 /bin/bash -lc "\
+            yum -y update && yum -y install python3 python3-pip gcc openssl-devel bzip2-devel libffi-devel make && \
+            python3 -m pip install --upgrade pip && \
+            python3 -m pip install -r backend/requirements.txt && \
+            python3 -m pip install -r backend/requirements-dev.txt && \
+            cd backend && python3 -m pytest -q --junitxml=report-centos8.xml\"
+      - name: Upload CentOS8 backend test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-report-centos8
+          path: backend/report-centos8.xml
